@@ -1374,7 +1374,14 @@ class DataGrid extends Control
 	public function setDefaultFilter(array $defaultFilter, bool $useOnReset = true): self
 	{
 		foreach ($defaultFilter as $key => $value) {
+			/** @var Filter|null $filter */
 			$filter = $this->getFilter($key);
+
+			if ($filter === null) {
+				throw new DataGridException(
+					sprintf('Can not set default value to nonexisting filter [%s]', $key)
+				);
+			}
 
 			if ($filter instanceof FilterMultiSelect && !is_array($value)) {
 				throw new DataGridException(
@@ -1383,11 +1390,19 @@ class DataGrid extends Control
 			}
 
 			if ($filter instanceof FilterRange || $filter instanceof FilterDateRange) {
-				if (!is_array($value) || !isset($value['from'], $value['to'])) {
+				if (!is_array($value)) {
+					throw new DataGridException(
+						sprintf('Default value of filter [%s] - Range/DateRange has to be an array [from/to => ...]', $key)
+					);
+				}
+
+				$temp = $value;
+				unset($temp['from'], $temp['to']);
+
+				if (count($temp) > 0) {
 					throw new DataGridException(
 						sprintf(
-							'Default value of filter [%s] - %s has to be an array [from/to => ...]',
-							FilterDateRange::class,
+							'Default value of filter [%s] - Range/DateRange can contain only [from/to => ...] values',
 							$key
 						)
 					);
